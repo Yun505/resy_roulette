@@ -28,10 +28,13 @@ applicable_cuisine_list = [
     'Thai'
 ]
 
-"""
-Get user inputs  for date, party size, time, location, cuisines
-"""
 def user_input_json()-> tuple[str, str, str, dict, list[str]]:
+    # TODO: Change to web interface 
+    """Generates a tuple of user preferences based on user input. 
+
+    :return tuple[str, str, str, dict, list[str]]: Generates a tuple of user preferences based on date, party size, time, location, and cuisines they want to eat
+    """    
+    
     location = get_location("New York City, New York")
     cuisines_list = []
 
@@ -63,10 +66,13 @@ def user_input_json()-> tuple[str, str, str, dict, list[str]]:
 
     return date, party_size, time, location, cuisines_list
 
-"""
-Take in String input of location and return dictionary of the location's latitude and longitude
-"""
+    
 def get_location(address:str) -> dict:
+    """Takes address of restaurants then, parses through geopy and geonames api to get the latitude and longitude of the location to return
+
+    :param str address: String input of user location
+    :return dict: dictionary of location's latitude and longitude 
+    """
     gn = geocoders.GeoNames(username='yunjun505')
     try:
         location = gn.geocode(address)
@@ -75,17 +81,23 @@ def get_location(address:str) -> dict:
         print("Error, defaulting to NYC")
         return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
 
-"""
- Return restaurant list based on the user's inputs through querying and call filtered_restaurants method to filter for the cuisine 
-"""
-
 def get_restaurants(
+    
     date : str = formatted_date,
     party_size: str = "2",
     time : str = "",
     location: dict = {"latitude":40.712941,"longitude":-74.006393,"radius":35420},
     cuisine_list: list[str] = []
 ) -> list[dict]:
+    """Returns a list of restaurants based on user preferences through filtering and querying Resy Api
+
+    :param str date: date inputted by the user, defaults to formatted_date
+    :param str party_size: the user's input on party size, defaults to "2"
+    :param str time: time of the user's restaurant appointment, defaults to ""
+    :param _type_ location: city/town the user wants to eat in, defaults to {"latitude":40.712941,"longitude":-74.006393,"radius":35420}
+    :param list[str] cuisine_list: list of cuisines that the user wishes to eat, defaults to []
+    :return list[dict]: list of filtered restaurants based on the user's inputs
+    """    
     restaurant_list = []
     # If user didn't choose a specific time, defalt to current time
     if time == "":
@@ -121,10 +133,14 @@ def get_restaurants(
 
     return restaurant_list
 
-"""
-Filter restaurants by the cuisine
-"""
+
 def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -> list[dict]:
+    """Returns a list of restaurants filtered by user's preferences on cuisines
+
+    :param list[dict] restaurant_list:list of restaurants queried by Resy Api
+    :param list[str] cuisine_list: list of cuisines that the user wishes to eat 
+    :return list[dict]: list of restaurants filtered by the cuisines the user wants to eat
+    """    
     return_list = []
     for x in range(len(restaurant_list)):
         restaurant_cuisine = restaurant_list[x]['cuisine']
@@ -132,3 +148,5 @@ def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -
             return_list.append(restaurant_list[x])
 
     return return_list
+
+
