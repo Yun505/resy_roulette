@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 from geopy import geocoders
 
-
 # Getting the current date in YY:MM:DD to set as default day
 today = datetime.today()
 formatted_date = today.strftime("%Y %m %d")
@@ -65,8 +64,7 @@ def user_input_json()-> tuple[str, str, str, dict, list[str]]:
             cuisines_list = []
 
     return date, party_size, time, location, cuisines_list
-
-    
+  
 def get_location(address:str) -> dict:
     """Takes address of restaurants then, parses through geopy and geonames api to get the latitude and longitude of the location to return
 
@@ -82,7 +80,6 @@ def get_location(address:str) -> dict:
         return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
 
 def get_restaurants(
-    
     date : str = formatted_date,
     party_size: str = "2",
     time : str = "",
@@ -132,7 +129,6 @@ def get_restaurants(
         restaurant_list = filtered_restaurants(restaurant_list, cuisine_list)
 
     return restaurant_list
-
 
 def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -> list[dict]:
     """Returns a list of restaurants filtered by user's preferences on cuisines
