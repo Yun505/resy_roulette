@@ -1,10 +1,16 @@
-import json
-from datetime import datetime
+import re
 import requests
+import os
 from bs4 import BeautifulSoup
 from geopy import geocoders
+from dotenv import load_dotenv
+from datetime import datetime
 
-# Getting the current date in YY:MM:DD to set as default day
+load_dotenv()
+header = {"Authorization":os.environ["AUTHORIZATION"],
+          "X-Resy-Auth-Token":os.environ["XRESYAUTHTOKEN"],
+          "X-Resy-Universal-Auth": os.environ["XRESYUNIVERSALAUTH"]}
+
 today = datetime.today()
 formatted_date = today.strftime("%Y %m %d")
 
@@ -64,7 +70,7 @@ def user_input_json()-> tuple[str, str, str, dict, list[str]]:
             cuisines_list = []
 
     return date, party_size, time, location, cuisines_list
-  
+
 def get_location(address:str) -> dict:
     """Takes address of restaurants then, parses through geopy and geonames api to get the latitude and longitude of the location to return
 
@@ -77,7 +83,7 @@ def get_location(address:str) -> dict:
         return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
     except Exception as e:
         print("Error, defaulting to NYC")
-        return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
+        return {"latitude":location['latitude'],"longitude":location['longitude'],"radius":35420}
 
 def get_restaurants(
     date : str = formatted_date,
@@ -95,6 +101,8 @@ def get_restaurants(
     :param list[str] cuisine_list: list of cuisines that the user wishes to eat, defaults to []
     :return list[dict]: list of filtered restaurants based on the user's inputs
     """    
+    if cuisine_list[0] =='':
+            cuisine_list = []
     restaurant_list = []
     # If user didn't choose a specific time, defalt to current time
     if time == "":
@@ -122,12 +130,12 @@ def get_restaurants(
         add_dict['cuisine'] = cuisine.lower().strip()
         add_dict['location'] = location
         restaurant_list.append(add_dict)
-
+    print(cuisine_list)
     # Check if there are no restaurants or specific cuisines based on user's needs
     if len(restaurant_list) != 0 and len(cuisine_list) != 0:
         # Filter by cuisine
         restaurant_list = filtered_restaurants(restaurant_list, cuisine_list)
-
+    
     return restaurant_list
 
 def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -> list[dict]:
@@ -138,7 +146,7 @@ def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -
     :return list[dict]: list of restaurants filtered by the cuisines the user wants to eat
     """    
     return_list = []
-    for x in range(len(restaurant_list)):
+    for x, restaurant in enumerate(restaurant_list):
         restaurant_cuisine = restaurant_list[x]['cuisine']
         if restaurant_cuisine in cuisine_list:
             return_list.append(restaurant_list[x])
