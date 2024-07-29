@@ -3,28 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} Restaurant Result</title>
+    <title>Find a Restaurant</title>
     <link href="{{ url_for('static', filename='styles/style.css') }}" rel="stylesheet" />
 </head>
 <body>
-    <h1>Find a Restaurant</h1>
-    <form action="/retrieve" method="post">
-        <label for="date">Date (YYYY-MM-DD):</label>
-        <input type="text" id="date" name="date" required><br><br>
+    <form action="/retrieve" method="post" class="restaurant-form">
+        <h1>Find a Restaurant</h1>
+        <div class="form-group">
+            <label for="date">Date (YYYY-MM-DD):</label>
+            <input type="text" id="date" name="date" required>
+        </div>
         
-        <label for="party_size">Party Size:</label>
-        <input type="text" id="party_size" name="party_size" required><br><br>
+        <div class="form-group">
+            <label for="party_size">Party Size:</label>
+            <input type="text" id="party_size" name="party_size" required>
+        </div>
         
-        <label for="time">Time (HH:MM):</label>
-        <input type="text" id="time" name="time" required><br><br>
+        <div class="form-group">
+            <label for="time">Time (HH:MM):</label>
+            <input type="text" id="time" name="time" required>
+        </div>
         
-        <label for="location">Location:</label>
-        <input type="text" id="location" name="location" value="New York City, New York" required><br><br>
+        <div class="form-group">
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" value="New York City, New York" required>
+        </div>
         
-        <label for="cuisines">Cuisines (First letter capitalized, comma separated):</label>
-        <input type="text" id="cuisines" name="cuisines"><br><br>
+        <div class="form-group">
+            <label for="cuisines">Cuisines (First letter capitalized, comma separated):</label>
+            <input type="text" id="cuisines" name="cuisines">
+        </div>
         
-        <input type="submit" value="Find Restaurant">
+        <input type="submit" value="Find Restaurant" class="submit-btn">
     </form>
 </body>
 </html>
