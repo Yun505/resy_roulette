@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} Restaurant Result</title>
     <link href="{{ url_for('static', filename='styles/style.css') }}" rel="stylesheet" />
 </head>
+
 <body>
-    <h1>Restaurant Result</h1>
-    <p>{{ restaurant }}</p>
+    <div class="result-container">
+        <h1>Restaurant Result</h1>
+        <p>{{ restaurant }}</p>
+    </div>
 </body>
+
 </html>
