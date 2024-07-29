@@ -16,14 +16,18 @@ def get_restaurant():
     time = request.form['time']
     location_input = request.form['location']
     cuisines_input = request.form['cuisines']
-    
+   
     location = retrieve.get_location(location_input)
-    cuisines_list = [cuisine.strip().lower() for cuisine in cuisines_input.split(',')]
-    
+    cuisines_list = [cuisine.strip()for cuisine in cuisines_input.split(',')]
+
     restaurants = retrieve.get_restaurants(date, party_size, time, location, cuisines_list)
-    
+    print(restaurants)
+
     if restaurants:
-        restaurant_name = restaurants[0]['name']
+        randomized_restaurant =  randomized_restaurant = restaurants[0]
+        if len(restaurants) != 1:
+            randomized_restaurant  = retrieve.randomize_restaurants(restaurants)
+        restaurant_name = randomized_restaurant['name']
         return render_template('retrieve.html', title="Restaurant", restaurant=restaurant_name)
     else:
         return render_template('retrieve.html', title="Restaurant", restaurant="No restaurants found.")
