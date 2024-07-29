@@ -144,20 +144,6 @@ def get_restaurants(
             restaurant_list.append(add_dict)
     return restaurant_list
 
-# def filtered_restaurants(restaurant_list: list[dict], cuisine_list: list[str]) -> list[dict]:
-#     """Returns a list of restaurants filtered by user's preferences on cuisines
-
-#     :param list[dict] restaurant_list:list of restaurants queried by Resy Api
-#     :param list[str] cuisine_list: list of cuisines that the user wishes to eat 
-#     :return list[dict]: list of restaurants filtered by the cuisines the user wants to eat
-#     """    
-#     return_list = []
-#     for restaurant in restaurant_list:
-#         restaurant_cuisine = restaurant['cuisine']
-#         if restaurant_cuisine in cuisine_list:
-#             return_list.append(restaurant)
-
-#     return return_list
 
 def randomize_restaurants(restaurant_list: list[dict]) -> dict:
     """Returns a random restaurant in the filtered restaurant list
@@ -167,8 +153,8 @@ def randomize_restaurants(restaurant_list: list[dict]) -> dict:
     """    
     return random.choice(restaurant_list)
 
-
-location = get_location("New York City, New York")
-restaurants = get_restaurants("2024-07-30", "2", "15:30", location, [ "Korean","Japanese"])
-for i in range(10):
-    print(randomize_restaurants(restaurants))
+#Testing
+# location = get_location("New York City, New York")
+# restaurants = get_restaurants("2024-07-30", "2", "15:30", location, [ "Korean","Japanese"])
+# for i in range(10):
+#     print(randomize_restaurants(restaurants))
