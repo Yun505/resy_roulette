@@ -12,6 +12,9 @@ helping to satisfy any requests.
 
 The restaurants are found using calls to the Resy API.
 
+![image](https://github.com/user-attachments/assets/c0b249ce-fef6-4609-b040-940e98ed8a01)
+
+
 ## Quickstart
 You need to create a .env file in the main directory and input your authentication key to use the app and the post requests. 
 To start in the Terminal:```flask --app main  run    ```
