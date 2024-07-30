@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from waitress import serve
-import retrieve
+import src.retrieve as retrieve
 
 app = Flask(__name__)
 

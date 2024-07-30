@@ -1,11 +1,11 @@
-import re
-import requests
-import os
-import random
-from bs4 import BeautifulSoup
-from geopy import geocoders
-from dotenv import load_dotenv
-from datetime import datetime
+# import re
+# import requests
+# import os
+# import random
+# from bs4 import BeautifulSoup
+# from geopy import geocoders
+# from dotenv import load_dotenv
+# from datetime import datetime
 
 load_dotenv()
 header = {"Authorization":os.environ["AUTHORIZATION"],
