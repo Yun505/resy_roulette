@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from waitress import serve
-import retrieve
+from retrieve import ResyRetriever
 
 app = Flask(__name__)
 
@@ -17,16 +17,23 @@ def get_restaurant():
     location_input = request.form['location']
     cuisines_input = request.form['cuisines']
    
-    location = retrieve.get_location(location_input)
+    location = ResyRetriever.get_location(location_input)
     cuisines_list = [cuisine.strip()for cuisine in cuisines_input.split(',')]
 
-    restaurants = retrieve.get_restaurants(date, party_size, time, location, cuisines_list)
-    print(restaurants)
+    # Create ResyRetriever object
+    retriever = ResyRetriever(
+        date=date,
+        party_size=int(party_size),
+        time=time,
+        location=location,
+        cuisine_list=cuisines_list
+    )
+
+    restaurants = retriever.get_restaurants()
+    retriever.logger.info(restaurants)
 
     if restaurants:
-        randomized_restaurant =  randomized_restaurant = restaurants[0]
-        if len(restaurants) != 1:
-            randomized_restaurant  = retrieve.randomize_restaurants(restaurants)
+        randomized_restaurant =  retriever.randomize_restaurants(restaurants)
         restaurant_name = randomized_restaurant['name']
         return render_template('retrieve.html', title="Restaurant", restaurant=restaurant_name)
     else:

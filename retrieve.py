@@ -1,4 +1,6 @@
-import re
+"""This module retrieves and randomizes restaurants based on user preferences. This is done through a ResyRetriever object
+that takes in user preferences and filters restaurants based on those preferences."""
+
 import requests
 import os
 import random
@@ -6,41 +8,170 @@ from bs4 import BeautifulSoup
 from geopy import geocoders
 from dotenv import load_dotenv
 from datetime import datetime
+import logging
 
-load_dotenv()
-header = {"Authorization":os.environ["AUTHORIZATION"],
-          "X-Resy-Auth-Token":os.environ["XRESYAUTHTOKEN"],
-          "X-Resy-Universal-Auth": os.environ["XRESYUNIVERSALAUTH"]}
+class ResyRetriever(object):
+    """Class that retrieve and randomizes restaurants based on user preferences. 
 
-today = datetime.today()
-formatted_date = today.strftime("%Y %m %d")
+    Attributes:
+        date (str): A string representing the date of the reservation.
+        party_size (int): A string representing the number of people in the party.
+        time (str): A string representing the time of the reservation.
+        location (dict): A dictionary representing the location of the reservation.
+        cuisine_list (list[str]): A list of strings representing the cuisines the user wants to eat.
+    """
 
-# Cuisines on Resy Website that the user can choose from
-applicable_cuisine_list = [
-    'American',
-    'Chinese',
-    'Cocktail Bar',
-    'French',
-    'Indian',
-    'Italian',
-    'Japanese',
-    'Korean',
-    'Mediterranean',
-    'Mexican',
-    'New American',
-    'Pizza',
-    'Seafood',
-    'Sushi',
-    'Thai'
-]
+    # Total set of cuisines, static variable
+    # Gathered from all available cuisines in Resy
+    applicable_cuisine_list = (
+        'American',
+        'Chinese',
+        'Cocktail Bar',
+        'French',
+        'Indian',
+        'Italian',
+        'Japanese',
+        'Korean',
+        'Mediterranean',
+        'Mexican',
+        'New American',
+        'Pizza',
+        'Seafood',
+        'Sushi',
+        'Thai'
+    )
 
-def user_input_json()-> tuple[str, str, str, dict, list[str]]:
-    """Generates a tuple of user preferences based on user input. 
+    @staticmethod
+    def get_location(address:str) -> dict:
+        """ Helper method to find the longitude and latitude of the location given in address form, defaults to NYC if address is not found
+        Takes address of restaurants then, parses through geopy and geonames api to get the latitude and longitude of the location to return
+        
+        :param str address: String input of user location
+        :return dict: dictionary of location's latitude and longitude 
+        """
+
+        logger = logging.getLogger(__name__)
+        gn = geocoders.GeoNames(username='yunjun505')
+        try:
+            location = gn.geocode(address)
+            return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
+        except Exception as e:
+            logger.info(e)
+            logger.info("Error, defaulting to NYC")
+            return {"latitude":location['latitude'],"longitude":location['longitude'],"radius":35420}
+   
+    def __init__(self,
+                 date:str=datetime.today().strftime('%Y-%m-%d'),
+                 time:str="",
+                 location:dict = None,
+                 party_size:int = 2,
+                 cuisine_list:list[str] = applicable_cuisine_list):
+        """Constructor Method
+
+        Args:
+            date (str): The date of the reservation.
+            time (str): The time of the reservation.
+            location (dict, optional): The location of the reservation, in the form {longitude: _, latitude: _, radius: _}. Defaults to that of NYC.
+            party_size (int, optional): Requested party size for the reservation. Defaults to 2.
+            cuisine_list (list[str], optional): The list of cuisines to search. Defaults to all available cuisines available in Resy.
+        """
+        self.date = date
+        self.party_size = party_size
+        self.time = time
+        self.location = location
+
+        if not self.location:
+            self.location = ResyRetriever.get_location("New York City, New York")
+
+        self.cuisine_list = []
+
+        for cuisine in cuisine_list:
+            if cuisine in ResyRetriever.applicable_cuisine_list:
+                self.cuisine_list.append(cuisine)
+        
+        if not self.cuisine_list:
+            self.cuisine_list = list(ResyRetriever.applicable_cuisine_list)
+
+        # Logger
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(filename='myapp.log', level=logging.INFO)
+
+        load_dotenv()
+        self.header = {"Authorization":os.environ["AUTHORIZATION"],
+                "X-Resy-Auth-Token":os.environ["XRESYAUTHTOKEN"],
+                "X-Resy-Universal-Auth": os.environ["XRESYUNIVERSALAUTH"]}
+   
+    def get_restaurants(self) -> list[dict]:
+        """Returns a list of restaurants based on user preferences through filtering and querying Resy Api. Preferences
+        already set as fields of ResyRetriever object.
+
+        :return list[dict]: list of filtered restaurants based on the user's inputs
+        """    
+        restaurant_list = []
+
+        # If user didn't choose a specific time, default to current time
+        if self.time == "":
+            param = {"day": self.date,"party_size":int(self.party_size)}
+        else:
+            param = {"day": self.date,"party_size":int(self.party_size),"time_filter":self.time}
+    
+        # Create a list of dictionaries of restaurants based on the cuisine with attributes of name, cuisine, and location
+        self.logger.info(self.cuisine_list)
+        for number, cuisine in enumerate(self.cuisine_list):
+            self.logger.info("Cuisine number %d: %s", number, cuisine)
+
+            # Query Resy api for the cuisine 
+            query = {"availability":True,"page":1,"per_page":20,
+                "slot_filter":param,"types":["venue"],
+                "order_by":"availability","geo":self.location,"query":"","venue_filter":{"cuisine":cuisine}}
+            url = "https://api.resy.com/3/venuesearch/search"
+            resy_request_for_total = requests.post(url,headers=self.header,json=query)
+            resy_request_object_for_total = resy_request_for_total.json()
+            
+            # Query Resy api again for the total amount of restaurants in that cuisine to be on one page
+            total = resy_request_object_for_total['meta']['total']
+            full_query = {"availability":True,"page":1,"per_page":total,
+                "slot_filter":param,"types":["venue"],
+                "order_by":"availability","geo":self.location,"query":"","venue_filter":{"cuisine":cuisine}}
+            resy_request = requests.post(url,headers=self.header,json=full_query)
+            resy_request_object = resy_request.json()
+        
+            # Create a list of dictionaries of restaurants with name, cuisine, and location key
+            for i in range(len(resy_request_object['search']['hits'])):
+                add_dict = {}
+                name = resy_request_object['search']['hits'][i]['_highlightResult']['name']['value']
+                parsed_name = BeautifulSoup(name, "html.parser")
+
+                cuisine = resy_request_object['search']['hits'][i]['_highlightResult']['cuisine'][0]['value']
+                restaurant_location = resy_request_object['search']['hits'][i]['_geoloc']
+                add_dict['name']= parsed_name
+                add_dict['cuisine'] = cuisine.lower().strip()
+                add_dict['location'] = restaurant_location
+                restaurant_list.append(add_dict)
+        return restaurant_list
+   
+    def randomize_restaurants(self, restaurant_list: list[dict]) -> dict:
+        """Returns a random restaurant in the filtered restaurant list. If no
+        restaurant is provided, calls the get_restaurants method to get a list of restaurants.
+
+        :param list[dict] restaurant_list: restaurant list filtered to user's preferences
+        :return dict: returns a dictionary of one restaurant with it's name, cuisine, and location
+        """    
+        
+        if not restaurant_list:
+            restaurant_list = self.get_restaurants()
+        
+        return random.choice(restaurant_list)
+
+def user_input_json()-> ResyRetriever:
+    """(Deprecated Method) - Currently used for testing purposes. Actual user input takes place within the Flask application.
+    
+    Generates a tuple of user preferences based on user input. 
 
     :return tuple[str, str, str, dict, list[str]]: Generates a tuple of user preferences based on date, party size, time, location, and cuisines they want to eat
-    """    
-    
-    location = get_location("New York City, New York")
+    """   
+
+    location = ResyRetriever.get_location("New York City, New York")
     cuisines_list = []
 
     print("We will be giving you a random restaurant!\n")
@@ -58,100 +189,21 @@ def user_input_json()-> tuple[str, str, str, dict, list[str]]:
 
     # User's choice if they want a specific cuisine or location they want to dine at
     if specific_location_cuisine == "y":
-        location  = get_location(input("Location? [include country and state if you can]"))
+        location  = ResyRetriever.get_location(input("Location? [include country and state if you can]"))
         print("\nApplicable cuisine List: ")
-        print(applicable_cuisine_list)
+        print(ResyRetriever.applicable_cuisine_list)
         print("\n")
         print("What cuisine would you like to eat?\n")
         cuisine = input("format:\nJapanese, Korean, American").lower()
         cuisines_list = [cuisine.strip() for cuisine in cuisine.split(',')]
-        # Check if user inputted any cuisines
-        if cuisines_list[0] =='':
-            cuisines_list = []
 
-    return date, party_size, time, location, cuisines_list
-
-def get_location(address:str) -> dict:
-    """Takes address of restaurants then, parses through geopy and geonames api to get the latitude and longitude of the location to return
-
-    :param str address: String input of user location
-    :return dict: dictionary of location's latitude and longitude 
-    """
-    gn = geocoders.GeoNames(username='yunjun505')
-    try:
-        location = gn.geocode(address)
-        return {"latitude":location.latitude,"longitude":location.longitude,"radius":35420}
-    except Exception as e:
-        print("Error, defaulting to NYC")
-        return {"latitude":location['latitude'],"longitude":location['longitude'],"radius":35420}
-
-def get_restaurants(
-    date : str = formatted_date,
-    party_size: str = "2",
-    time : str = "",
-    location: dict = {"latitude":40.712941,"longitude":-74.006393,"radius":35420},
-    cuisine_list: list[str] = []
-) -> list[dict]:
-    """Returns a list of restaurants based on user preferences through filtering and querying Resy Api
-
-    :param str date: date inputted by the user, defaults to formatted_date
-    :param str party_size: the user's input on party size, defaults to "2"
-    :param str time: time of the user's restaurant appointment, defaults to ""
-    :param _type_ location: city/town the user wants to eat in, defaults to {"latitude":40.712941,"longitude":-74.006393,"radius":35420}
-    :param list[str] cuisine_list: list of cuisines that the user wishes to eat, defaults to []
-    :return list[dict]: list of filtered restaurants based on the user's inputs
-    """    
-    restaurant_list = []
-    if cuisine_list[0] =='':
-            cuisine_list = []
-        
-    # If user didn't choose a specific time, defalt to current time
-    if time == "":
-      param = {"day": date,"party_size":int(party_size)}
-    else:
-      param = {"day": date,"party_size":int(party_size),"time_filter":time}
-  
-    # Create a list of dictionaries of restaurants based on the cuisine with attributes of name, cuisine, and location
-    print(cuisine_list)
-    for x in cuisine_list:
-        # Query resy api for the cuisine 
-        query = {"availability":True,"page":1,"per_page":20,
-             "slot_filter":param,"types":["venue"],
-             "order_by":"availability","geo":location,"query":"","venue_filter":{"cuisine":x}}
-        url = "https://api.resy.com/3/venuesearch/search"
-        resy_request_for_total = requests.post(url,headers=header,json=query)
-        resy_request_object_for_total = resy_request_for_total.json()
-        
-        # Query resy api again for the total amount of restaurants in that cuisine to be on one page
-        total = resy_request_object_for_total['meta']['total']
-        full_query = {"availability":True,"page":1,"per_page":total,
-             "slot_filter":param,"types":["venue"],
-             "order_by":"availability","geo":location,"query":"","venue_filter":{"cuisine":x}}
-        resy_request = requests.post(url,headers=header,json=full_query)
-        resy_request_object = resy_request.json()
-       
-        # Create a list of dictionaries of restaurants with name, cuisine, and location key
-        for i in range(len(resy_request_object['search']['hits'])):
-            add_dict = {}
-            name = resy_request_object['search']['hits'][i]['_highlightResult']['name']['value']
-            parsed_name = BeautifulSoup(name, "html.parser")
-
-            cuisine = resy_request_object['search']['hits'][i]['_highlightResult']['cuisine'][0]['value']
-            restaurant_location = resy_request_object['search']['hits'][i]['_geoloc']
-            add_dict['name']= parsed_name
-            add_dict['cuisine'] = cuisine.lower().strip()
-            add_dict['location'] = restaurant_location
-            restaurant_list.append(add_dict)
-    return restaurant_list
-
-
-def randomize_restaurants(restaurant_list: list[dict]) -> dict:
-    """Returns a random restaurant in the filtered restaurant list
-
-    :param list[dict] restaurant_list: restaurant list filtered to user's preferences
-    :return dict: returns a dictionary of one restaurant with it's name, cuisine, and location
-    """    
-    return random.choice(restaurant_list)
+    return ResyRetriever(
+        date=date,
+        time=time,
+        location=location,
+        party_size=party_size,
+        cuisine_list=cuisines_list
+    )
 
 #Testing
 # location = get_location("New York City, New York")
