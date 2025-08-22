@@ -65,4 +65,4 @@ To launch the app locally, run the following command in your terminal:
 - Migrate to AWS
 
 ## Contributions
-Big thanks to [Henry Liu](https://github.com/HenryLiu714) for his help with this project. Any additional contributions or pull requests are welcome from anyone!
+Any additional contributions or pull requests are welcome from anyone!
