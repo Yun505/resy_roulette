@@ -100,6 +100,20 @@ class ResyRetriever(object):
         self.header = {"Authorization":os.environ["AUTHORIZATION"],
                 "X-Resy-Auth-Token":os.environ["XRESYAUTHTOKEN"],
                 "X-Resy-Universal-Auth": os.environ["XRESYUNIVERSALAUTH"]}
+        
+        # Debug: Log the headers being sent (without showing full token values)
+        self.logger.info("Headers constructed successfully")
+        self.logger.info("Authorization header present: %s", "AUTHORIZATION" in os.environ)
+        self.logger.info("XRESYAUTHTOKEN present: %s", "XRESYAUTHTOKEN" in os.environ)
+        self.logger.info("XRESYUNIVERSALAUTH present: %s", "XRESYUNIVERSALAUTH" in os.environ)
+        self.logger.info("Header keys: %s", list(self.header.keys()))
+        
+        # Log the actual header values (be careful with sensitive data)
+        for key, value in self.header.items():
+            if key == "Authorization":
+                self.logger.info("Authorization header: %s", value[:20] + "..." if len(value) > 20 else value)
+            else:
+                self.logger.info("%s header: %s", key, value[:20] + "..." if len(value) > 20 else value)
    
     def get_restaurants(self) -> list[dict]:
         """Returns a list of restaurants based on user preferences through filtering and querying Resy Api. Preferences
@@ -126,10 +140,32 @@ class ResyRetriever(object):
                 "order_by":"availability","geo":self.location,"query":"","venue_filter":{"cuisine":cuisine}}
             url = "https://api.resy.com/3/venuesearch/search"
             resy_request_for_total = requests.post(url,headers=self.header,json=query)
-            resy_request_object_for_total = resy_request_for_total.json()
             
-            # Query Resy api again for the total amount of restaurants in that cuisine to be on one page
-            total = resy_request_object_for_total['meta']['total']
+            # Debug: Log the response to see what we're actually getting
+            self.logger.info("API Response Status: %d", resy_request_for_total.status_code)
+            
+            if resy_request_for_total.status_code != 200:
+                self.logger.error("API request failed with status %d: %s", 
+                                resy_request_for_total.status_code, 
+                                resy_request_for_total.text)
+                continue
+                
+            try:
+                resy_request_object_for_total = resy_request_for_total.json()
+                self.logger.info("API Response Keys: %s", list(resy_request_object_for_total.keys()))
+                
+                # Let's see what the actual structure is
+                self.logger.info("Full API Response: %s", resy_request_object_for_total)
+                
+                # For now, let's use a fixed page size instead of trying to get total
+                total = 20  # Use the per_page value we set
+                self.logger.info("Using fixed page size: %d", total)
+                
+            except Exception as e:
+                self.logger.error("Error parsing API response: %s", str(e))
+                self.logger.error("Response text: %s", resy_request_for_total.text)
+                continue
+                
             full_query = {"availability":True,"page":1,"per_page":total,
                 "slot_filter":param,"types":["venue"],
                 "order_by":"availability","geo":self.location,"query":"","venue_filter":{"cuisine":cuisine}}
