@@ -22,7 +22,7 @@ def install_requirements():
     
     # Install requirements to the package directory
     subprocess.run([
-        'pip', 'install', '-r', 'lambda_requirements.txt', 
+        'pip', 'install', '-r', 'requirements.txt', 
         '-t', 'lambda_package'
     ], check=True)
     

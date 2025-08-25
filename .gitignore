@@ -3,8 +3,7 @@
 test/__pycache__/test.cpython-312.pyc
 test/__pycache__/test.ipynb
 .env
-requirements.txt
-AWS_LAMBDA_DEPLOYMENT_GUIDE.md
-ENVIRONMENT_SETUP_GUIDE.md
 myapp.log
 resy_roulette_lambda.zip
+lambda_package/
+/__pycache__

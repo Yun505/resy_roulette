@@ -23,16 +23,48 @@ def lambda_handler(event, context):
     }
     """
     try:
-        # Parse the incoming event
-        if isinstance(event, str):
-            event = json.loads(event)
+        # Handle different event types (API Gateway, direct invocation, etc.)
+        if 'httpMethod' in event:
+            # API Gateway event
+            if event['httpMethod'] == 'GET' and event['path'] == '/health':
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'status': 'healthy',
+                        'service': 'resy-roulette-lambda'
+                    })
+                }
+            elif event['httpMethod'] == 'POST' and event['path'] == '/restaurant':
+                # Parse body from API Gateway
+                if 'body' in event:
+                    body = event['body']
+                    if isinstance(body, str):
+                        body = json.loads(body)
+                else:
+                    body = event
+            else:
+                return {
+                    'statusCode': 404,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Endpoint not found'})
+                }
+        else:
+            # Direct Lambda invocation
+            body = event
         
         # Extract parameters with defaults
-        date = event.get('date', '')
-        time = event.get('time', '')
-        party_size = int(event.get('party_size', 2))
-        location_input = event.get('location', 'New York City, New York')
-        cuisines_input = event.get('cuisines', '')
+        date = body.get('date', '')
+        time = body.get('time', '')
+        party_size = int(body.get('party_size', 2))
+        location_input = body.get('location', 'New York City, New York')
+        cuisines_input = body.get('cuisines', '')
         
         # Parse cuisines
         if cuisines_input:
